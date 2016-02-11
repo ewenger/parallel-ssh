@@ -301,6 +301,110 @@ UnknownHostException, ConnectionErrorException
                     raise ex
         return output
     
+    def run_commands(self, *args, **kwargs):
+        """Run command on all hosts in parallel, honoring self.pool_size,
+        and return output buffers.
+
+        This function will block until all commands have **started** and
+        then return immediately. Any connection and/or authentication exceptions
+        will be raised here and need catching.
+
+        :param args: Positional arguments for command
+        :type args: tuple
+        :param sudo: (Optional) Run with sudo. Defaults to False
+        :type sudo: bool
+        :param stop_on_errors: (Optional) Raise exception on errors running command. \
+        Defaults to True. With stop_on_errors set to False, exceptions are instead \
+        added to output of `run_command`. See example usage below.
+        :type stop_on_errors: bool
+        :param kwargs: Keyword arguments for command
+        :type kwargs: dict
+        :rtype: Dictionary with host as key as per \
+          :mod:`pssh.pssh_client.ParallelSSHClient.get_output`
+        
+        :raises: :mod:`pssh.exceptions.AuthenticationException` on authentication error
+        :raises: :mod:`pssh.exceptions.UnknownHostException` on DNS resolution error
+        :raises: :mod:`pssh.exceptions.ConnectionErrorException` on error connecting
+        :raises: :mod:`pssh.exceptions.SSHException` on other undefined SSH errors
+
+        **Example Usage**
+
+        **Simple run command**
+        
+        >>> output = client.run_command('ls -ltrh')
+        
+        *print stdout for each command*
+        
+        >>> for host in output:
+        >>>     for line in output[host]['stdout']: print line
+
+        *Get exit codes after command has finished*
+
+        >>> client.get_exit_codes(output)
+        >>> for host in output:
+        >>> ... print output[host]['exit_code']
+        0
+        0
+        
+        *Wait for completion, no stdout printing*
+        
+        >>> client.join(output)
+        
+        *Run with sudo*
+        
+        >>> output = client.run_command('ls -ltrh', sudo=True)
+        
+        Capture stdout - **WARNING** - this will store the entirety of stdout
+        into memory and may exhaust available memory if command output is
+        large enough:
+        
+        >>> for host in output:
+        >>>     stdout = list(output[host]['stdout'])
+        >>>     print "Complete stdout for host %s is %s" % (host, stdout,)
+        
+        **Example Output**
+        
+        ::
+        
+          {'myhost1': {'exit_code': exit code if ready else None,
+                       'channel' : SSH channel of command,
+                       'stdout'  : <iterable>,
+                       'stderr'  : <iterable>,
+                       'cmd'     : <greenlet>},
+                       'exception' : None}
+        
+        **Do not stop on errors, return per-host exceptions in output**
+        
+        >>> output = client.run_command('ls -ltrh', stop_on_errors=False)
+        >>> client.join(output)
+        >>> print output
+        
+        ::
+        
+          {'myhost1': {'exit_code': None,
+                       'channel' : None,
+                       'stdout'  : None,
+                       'stderr'  : None,
+                       'cmd'     : None,
+                       'exception' : ConnectionErrorException(
+                           "Error connecting to host '%s:%s' - %s - retry %s/%s",
+                           host, port, 'Connection refused', 3, 3)}}
+        
+        """
+        stop_on_errors = kwargs.pop('stop_on_errors', True)
+
+        cmds = [self.pool.spawn(self._exec_command, host, args[0][host], **kwargs)
+                for host in self.hosts]
+                    
+        output = {}
+        for cmd in cmds:
+            try:
+                self.get_output(cmd, output)
+            except Exception, ex:
+                if stop_on_errors:
+                    raise ex
+        return output
+    
     def exec_command(self, *args, **kwargs):
         """Run command on all hosts in parallel, honoring `self.pool_size`
         
