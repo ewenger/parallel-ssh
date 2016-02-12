@@ -302,7 +302,7 @@ UnknownHostException, ConnectionErrorException
         return output
     
     def run_commands(self, *args, **kwargs):
-        """Run command on all hosts in parallel, honoring self.pool_size,
+        """Run commands from passed dict parameter on all hosts in parallel, honoring self.pool_size,
         and return output buffers.
 
         This function will block until all commands have **started** and
@@ -315,7 +315,7 @@ UnknownHostException, ConnectionErrorException
         :type sudo: bool
         :param stop_on_errors: (Optional) Raise exception on errors running command. \
         Defaults to True. With stop_on_errors set to False, exceptions are instead \
-        added to output of `run_command`. See example usage below.
+        added to output of `run_commands`. See example usage below.
         :type stop_on_errors: bool
         :param kwargs: Keyword arguments for command
         :type kwargs: dict
@@ -331,7 +331,7 @@ UnknownHostException, ConnectionErrorException
 
         **Simple run command**
         
-        >>> output = client.run_command('ls -ltrh')
+        >>> output = client.run_commands('ls -ltrh')
         
         *print stdout for each command*
         
@@ -352,7 +352,7 @@ UnknownHostException, ConnectionErrorException
         
         *Run with sudo*
         
-        >>> output = client.run_command('ls -ltrh', sudo=True)
+        >>> output = client.run_commands('ls -ltrh', sudo=True)
         
         Capture stdout - **WARNING** - this will store the entirety of stdout
         into memory and may exhaust available memory if command output is
@@ -375,7 +375,7 @@ UnknownHostException, ConnectionErrorException
         
         **Do not stop on errors, return per-host exceptions in output**
         
-        >>> output = client.run_command('ls -ltrh', stop_on_errors=False)
+        >>> output = client.run_commands('ls -ltrh', stop_on_errors=False)
         >>> client.join(output)
         >>> print output
         

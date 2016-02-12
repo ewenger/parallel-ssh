@@ -21,11 +21,11 @@ if sys.version_info >= (3,):
     convert_2_to_3['use_2to3'] = True
 
 setup(name='parallel-ssh',
-      version='0.80.6',
+      version='0.81.0',
       description='Asynchronous parallel SSH library',
-      author='Panos Kittenis',
-      author_email='pkittenis@gmail.com',
-      url = "https://github.com/pkittenis/parallel-ssh",
+      author='Eric Wenger',
+      author_email='eric.j.wenger@gmail.com',
+      url = "https://github.com/ewenger/parallel-ssh",
       packages = find_packages('.', exclude=(
           'embedded_server', 'embedded_server.*')),
       install_requires = ['paramiko', 'gevent'],
